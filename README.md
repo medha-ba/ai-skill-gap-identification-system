@@ -108,20 +108,6 @@ Open your browser at **http://localhost:8000** → Sign up → Upload a resume �
 
 ---
 
-## 📸 Screenshots
-
-### Login Page
-Dark glassmorphism login/signup with tabbed interface.
-
-### Dashboard — Overview Tab
-Skill match ring, bar chart, radar chart, and ATS preview.
-
-### Career Paths Tab
-AI-suggested alternative roles ranked by skill match percentage.
-
-### Interview Prep Tab
-Personalized questions organized by category with experience level selector.
-
 ---
 
 ## 🔑 Supported Job Roles
