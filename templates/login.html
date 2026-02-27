@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillGap AI — Login</title>
+    <meta name="description" content="Sign in to SkillGap AI to analyze your resume and identify skill gaps." />
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        :root {
+            --bg-body: #06080f;
+            --bg-card: rgba(255, 255, 255, 0.035);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-accent: rgba(167, 139, 250, 0.25);
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --accent-glow: rgba(124, 58, 237, 0.3);
+            --text-1: #e2e8f0;
+            --text-2: #94a3b8;
+            --text-3: #475569;
+            --success: #4ade80;
+            --danger: #f87171;
+            --font: 'Inter', system-ui, sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-body);
+            color: var(--text-1);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124, 58, 237, 0.14) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 90% 90%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+        }
+
+        /* === AUTH CONTAINER === */
+        .auth-wrapper {
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px 32px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        /* === BRAND === */
+        .auth-brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .auth-brand-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent), #4f46e5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #fff;
+            box-shadow: 0 8px 28px var(--accent-glow);
+            margin-bottom: 12px;
+        }
+
+        .auth-brand-name {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-1);
+        }
+
+        .auth-brand-name span {
+            color: var(--accent-light)
+        }
+
+        .auth-brand-sub {
+            font-size: 0.8rem;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        /* === TAB TOGGLE === */
+        .auth-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 24px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            background: transparent;
+            color: var(--text-3);
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, var(--accent), #5b21b6);
+            color: #fff;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .auth-tab:hover:not(.active) {
+            color: var(--text-2);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* === PANELS === */
+        .auth-panel {
+            display: none
+        }
+
+        .auth-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* === FORM FIELDS === */
+        .field-group {
+            margin-bottom: 16px
+        }
+
+        .field-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-1);
+            font-family: var(--font);
+            font-size: 0.88rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .field-input:focus {
+            border-color: var(--accent-light);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.12);
+        }
+
+        .field-input::placeholder {
+            color: var(--text-3)
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .field-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-3);
+        }
+
+        .field-check input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 14px;
+            height: 14px;
+        }
+
+        /* === BUTTONS === */
+        .btn-auth {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent), #4f46e5);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px var(--accent-glow);
+            transition: transform 0.15s, box-shadow 0.15s;
+            margin-top: 8px;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.5);
+        }
+
+        .btn-auth:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none
+        }
+
+        /* === ALERTS === */
+        .auth-alert {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .auth-alert.error {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #fca5a5;
+            display: block;
+        }
+
+        .auth-alert.success {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            color: var(--success);
+            display: block;
+        }
+
+        /* === DIVIDER === */
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .auth-divider span {
+            font-size: 0.72rem;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* === FEATURES STRIP === */
+        .auth-features {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .af {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 50px;
+            background: rgba(74, 222, 128, 0.06);
+            border: 1px solid rgba(74, 222, 128, 0.12);
+            color: var(--success);
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        /* === FOOTER === */
+        .auth-footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.75rem;
+            color: var(--text-3);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth-wrapper">
+        <div class="auth-card">
+
+            <!-- Brand -->
+            <div class="auth-brand">
+                <div class="auth-brand-icon"><i class="bi bi-cpu-fill"></i></div>
+                <div class="auth-brand-name">Skill<span>Gap</span> AI</div>
+                <p class="auth-brand-sub">AI-Powered Resume Skill Gap Analyzer</p>
+            </div>
+
+            <!-- Tab Toggle -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin" onclick="switchAuth('login')">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                </button>
+                <button class="auth-tab" id="tabSignup" onclick="switchAuth('signup')">
+                    <i class="bi bi-person-plus-fill me-1"></i> Sign Up
+                </button>
+            </div>
+
+            <!-- Alert -->
+            <div id="authAlert" class="auth-alert"></div>
+
+            <!-- LOGIN PANEL -->
+            <div class="auth-panel active" id="panelLogin">
+                <form id="loginForm" novalidate>
+                    <div class="field-group">
+                        <label class="field-label" for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" class="field-input" placeholder="you@example.com"
+                            required />
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" class="field-input" placeholder="Enter your password"
+                            required />
+                    </div>
+                    <div class="field-row">
+                        <label class="field-check">
+                            <input type="checkbox" /> Remember me
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-auth" id="loginBtn">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                    </button>
+                </form>
+            </div>
+
+            <!-- SIGNUP PANEL -->
+            <div class="auth-panel" id="panelSignup">
+                <form id="signupForm" novalidate>
+                    <div class="field-group">
+                        <label class="field-label" for="signupName">Full Name</label>
+                        <input type="text" id="signupName" class="field-input" placeholder="John Doe" required />
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" for="signupEmail">Email Address</label>
+                        <input type="email" id="signupEmail" class="field-input" placeholder="you@example.com"
+                            required />
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" class="field-input" placeholder="Min 6 characters"
+                            required minlength="6" />
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" for="signupConfirm">Confirm Password</label>
+                        <input type="password" id="signupConfirm" class="field-input" placeholder="Repeat password"
+                            required />
+                    </div>
+                    <button type="submit" class="btn-auth" id="signupBtn">
+                        <i class="bi bi-person-plus-fill me-1"></i> Create Account
+                    </button>
+                </form>
+            </div>
+
+            <!-- Divider -->
+            <div class="auth-divider"><span>Features</span></div>
+
+            <!-- Features -->
+            <div class="auth-features">
+                <div class="af"><i class="bi bi-check-circle-fill"></i> Skill Matching</div>
+                <div class="af"><i class="bi bi-check-circle-fill"></i> ATS Score</div>
+                <div class="af"><i class="bi bi-check-circle-fill"></i> Course Recs</div>
+            </div>
+
+        </div>
+
+        <div class="auth-footer">
+            &copy; 2026 SkillGap AI · Powered by FastAPI &middot; spaCy
+        </div>
+    </div>
+
+    <script>
+        // === TAB SWITCH ===
+        function switchAuth(mode) {
+            document.getElementById("tabLogin").classList.toggle("active", mode === "login");
+            document.getElementById("tabSignup").classList.toggle("active", mode === "signup");
+            document.getElementById("panelLogin").classList.toggle("active", mode === "login");
+            document.getElementById("panelSignup").classList.toggle("active", mode === "signup");
+            hideAlert();
+        }
+
+        // === ALERTS ===
+        function showAlert(msg, type) {
+            const el = document.getElementById("authAlert");
+            el.textContent = msg;
+            el.className = "auth-alert " + type;
+        }
+        function hideAlert() {
+            const el = document.getElementById("authAlert");
+            el.className = "auth-alert";
+            el.textContent = "";
+        }
+
+        // === LOGIN ===
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            hideAlert();
+
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value;
+
+            if (!email || !password) {
+                showAlert("Please enter your email and password.", "error");
+                return;
+            }
+
+            const btn = document.getElementById("loginBtn");
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
+
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showAlert("Login successful! Redirecting…", "success");
+                    setTimeout(() => window.location.href = "/", 600);
+                } else {
+                    showAlert(data.detail || "Invalid email or password.", "error");
+                }
+            } catch (err) {
+                showAlert("Network error. Please try again.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Sign In';
+            }
+        });
+
+        // === SIGNUP ===
+        document.getElementById("signupForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            hideAlert();
+
+            const name = document.getElementById("signupName").value.trim();
+            const email = document.getElementById("signupEmail").value.trim();
+            const password = document.getElementById("signupPassword").value;
+            const confirm = document.getElementById("signupConfirm").value;
+
+            if (!name || !email || !password) {
+                showAlert("Please fill in all fields.", "error");
+                return;
+            }
+            if (password.length < 6) {
+                showAlert("Password must be at least 6 characters.", "error");
+                return;
+            }
+            if (password !== confirm) {
+                showAlert("Passwords do not match.", "error");
+                return;
+            }
+
+            const btn = document.getElementById("signupBtn");
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating…';
+
+            try {
+                const res = await fetch("/api/auth/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ full_name: name, email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showAlert("Account created! Redirecting…", "success");
+                    setTimeout(() => window.location.href = "/", 600);
+                } else {
+                    showAlert(data.detail || "Registration failed.", "error");
+                }
+            } catch (err) {
+                showAlert("Network error. Please try again.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-person-plus-fill me-1"></i> Create Account';
+            }
+        });
+    </script>
+</body>
+
+</html>

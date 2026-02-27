@@ -1,0 +1,84 @@
+{
+  "technical_skills": [
+    "python", "java", "javascript", "typescript", "c", "c++", "c#", "ruby", "go", "rust",
+    "kotlin", "swift", "scala", "r", "matlab", "perl", "php", "bash", "shell scripting",
+    "html", "css", "react", "angular", "vue", "nextjs", "nodejs", "express", "django",
+    "flask", "fastapi", "spring", "springboot", "laravel", "rails",
+    "sql", "mysql", "postgresql", "sqlite", "mongodb", "redis", "cassandra", "dynamodb",
+    "oracle", "nosql", "graphql", "rest api", "restful api", "soap",
+    "machine learning", "deep learning", "nlp", "natural language processing",
+    "computer vision", "neural networks", "tensorflow", "keras", "pytorch", "scikit-learn",
+    "pandas", "numpy", "matplotlib", "seaborn", "plotly", "scipy", "xgboost", "lightgbm",
+    "data analysis", "data science", "data engineering", "data visualization",
+    "statistics", "probability", "linear algebra", "calculus",
+    "aws", "azure", "gcp", "google cloud", "cloud computing", "docker", "kubernetes",
+    "terraform", "ansible", "jenkins", "ci/cd", "devops", "git", "github", "gitlab",
+    "linux", "unix", "windows server",
+    "network security", "cybersecurity", "penetration testing", "ethical hacking",
+    "blockchain", "smart contracts", "solidity",
+    "excel", "power bi", "tableau", "looker", "qlik",
+    "hadoop", "spark", "kafka", "airflow", "dbt", "etl",
+    "reinforcement learning", "generative ai", "llm", "langchain", "hugging face",
+    "opencv", "image processing", "feature engineering", "model deployment",
+    "mlops", "a/b testing", "hypothesis testing"
+  ],
+  "soft_skills": [
+    "communication", "teamwork", "problem solving", "critical thinking", "leadership",
+    "project management", "time management", "adaptability", "creativity",
+    "collaboration", "presentation", "agile", "scrum", "kanban"
+  ],
+  "job_roles": {
+    "Data Analyst": [
+      "sql", "python", "excel", "tableau", "power bi", "data visualization",
+      "statistics", "data analysis", "pandas", "numpy", "matplotlib", "seaborn",
+      "r", "a/b testing", "hypothesis testing", "etl", "reporting"
+    ],
+    "ML Engineer": [
+      "python", "machine learning", "deep learning", "tensorflow", "pytorch",
+      "scikit-learn", "pandas", "numpy", "sql", "docker", "kubernetes",
+      "mlops", "git", "feature engineering", "model deployment", "nlp",
+      "aws", "azure", "gcp", "spark", "airflow", "xgboost", "lightgbm"
+    ],
+    "Web Developer": [
+      "html", "css", "javascript", "react", "nodejs", "rest api", "git",
+      "sql", "mongodb", "typescript", "nextjs", "graphql", "docker",
+      "bootstrap", "express", "redux", "responsive design", "webpack"
+    ],
+    "Data Engineer": [
+      "python", "sql", "spark", "hadoop", "kafka", "airflow", "dbt",
+      "etl", "aws", "azure", "gcp", "docker", "kubernetes", "postgresql",
+      "mongodb", "redis", "scala", "git", "linux", "terraform"
+    ],
+    "DevOps Engineer": [
+      "docker", "kubernetes", "jenkins", "ci/cd", "terraform", "ansible",
+      "aws", "azure", "gcp", "linux", "bash", "git", "python",
+      "monitoring", "networking", "security", "nginx", "prometheus", "grafana"
+    ],
+    "Cybersecurity Analyst": [
+      "network security", "cybersecurity", "penetration testing", "ethical hacking",
+      "linux", "python", "bash", "firewall", "siem", "vulnerability assessment",
+      "cryptography", "incident response", "risk management", "compliance"
+    ],
+    "Frontend Developer": [
+      "html", "css", "javascript", "react", "angular", "vue", "typescript",
+      "bootstrap", "webpack", "git", "responsive design", "rest api",
+      "graphql", "jest", "figma", "accessibility", "seo"
+    ],
+    "Backend Developer": [
+      "python", "java", "nodejs", "rest api", "sql", "postgresql", "mongodb",
+      "redis", "docker", "git", "django", "flask", "spring", "express",
+      "microservices", "message queues", "caching", "authentication", "aws"
+    ],
+    "Full Stack Developer": [
+      "html", "css", "javascript", "react", "nodejs", "python", "sql",
+      "mongodb", "rest api", "docker", "git", "typescript", "postgresql",
+      "aws", "ci/cd", "graphql", "redux", "express", "django"
+    ],
+    "Data Scientist": [
+      "python", "r", "machine learning", "statistics", "pandas", "numpy",
+      "scikit-learn", "tensorflow", "pytorch", "sql", "data visualization",
+      "matplotlib", "seaborn", "nlp", "deep learning", "hypothesis testing",
+      "feature engineering", "a/b testing", "tableau", "spark"
+    ]
+  }
+}

@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillGap AI — Resume Analyzer</title>
+  <meta name="description"
+    content="Upload your resume and discover your skill gaps for any job role with AI-powered analysis and personalized course recommendations." />
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link href="/static/style.css?v=4" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar-custom">
+    <div class="container-fluid d-flex align-items-center justify-content-between px-4">
+      <a href="/" class="nav-brand">
+        <div class="nav-brand-icon"><i class="bi bi-cpu-fill"></i></div>
+        Skill<span class="text-accent">Gap</span> AI
+      </a>
+      <div class="d-flex align-items-center gap-3">
+        <span class="badge-nano">v2.0</span>
+        <span class="badge-nano badge-nano-accent">spaCy · TF-IDF · NLP</span>
+        <div class="nav-user-pill">
+          <i class="bi bi-person-circle"></i>
+          <span>{{ user.full_name }}</span>
+        </div>
+        <a href="/api/auth/logout" class="btn-nav-logout" title="Logout">
+          <i class="bi bi-box-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN LAYOUT ===== -->
+  <main class="main-wrapper">
+    <div class="container py-4">
+
+      <!-- ===== LEFT-RIGHT SPLIT ON LARGE SCREENS ===== -->
+      <div class="row g-4">
+
+        <!-- ===== LEFT SIDEBAR — UPLOAD FORM ===== -->
+        <div class="col-lg-4 col-xl-3" id="sidebarCol">
+          <div class="sidebar-card sticky-sidebar">
+            <!-- Logo area -->
+            <div class="sidebar-header mb-4">
+              <div class="sidebar-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></div>
+              <h1 class="sidebar-title">Analyze Resume</h1>
+              <p class="sidebar-sub">Upload a PDF and select a target role to identify skill gaps.</p>
+            </div>
+
+            <form id="analyzeForm" enctype="multipart/form-data" novalidate>
+
+              <!-- Resume Upload -->
+              <div class="mb-3">
+                <label class="form-label-custom">
+                  <i class="bi bi-file-earmark-pdf-fill me-1"></i> Resume PDF
+                </label>
+                <div class="upload-zone" id="uploadZone">
+                  <input type="file" id="resumeFile" name="resume" accept=".pdf" class="upload-input" required />
+                  <div class="upload-content" id="uploadContent">
+                    <i class="bi bi-cloud-arrow-up-fill upload-icon"></i>
+                    <p class="upload-text">Drop PDF or <span class="text-accent">browse</span></p>
+                  </div>
+                  <div class="upload-selected d-none" id="uploadSelected">
+                    <i class="bi bi-file-earmark-check-fill text-accent fs-4"></i>
+                    <p class="upload-filename mb-0" id="uploadFilename"></p>
+                    <button type="button" class="btn-clear" id="clearFile">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Job Target Toggle -->
+              <div class="mb-3">
+                <label class="form-label-custom d-block">
+                  <i class="bi bi-briefcase-fill me-1"></i> Job Target
+                </label>
+                <div class="toggle-tabs-sm mb-2">
+                  <button type="button" class="toggle-btn-sm active" id="btnRoleTab" onclick="switchTab('role')">
+                    Role
+                  </button>
+                  <button type="button" class="toggle-btn-sm" id="btnJdTab" onclick="switchTab('jd')">
+                    Job Desc
+                  </button>
+                </div>
+
+                <!-- Role Dropdown -->
+                <div id="rolePanel">
+                  <select id="jobRole" name="job_role" class="form-select custom-select">
+                    <option value="">— Select Role —</option>
+                    {% for role in job_roles %}
+                    <option value="{{ role }}">{{ role }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <!-- JD Textarea -->
+                <div id="jdPanel" class="d-none">
+                  <textarea id="jobDescription" name="job_description" class="form-control custom-textarea" rows="5"
+                    placeholder="Paste the job description here…"></textarea>
+                </div>
+              </div>
+
+              <!-- Submit -->
+              <button type="submit" class="btn-analyze w-100" id="analyzeBtn">
+                <span id="btnText"><i class="bi bi-lightning-charge-fill me-2"></i>Analyze</span>
+                <span id="btnSpinner" class="d-none">
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>Analyzing…
+                </span>
+              </button>
+            </form>
+
+            <!-- Error -->
+            <div id="errorAlert" class="alert-custom error-alert mt-3 d-none">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              <span id="errorMsg"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== RIGHT CONTENT — RESULTS ===== -->
+        <div class="col-lg-8 col-xl-9">
+
+          <!-- PLACEHOLDER when no results -->
+          <div id="placeholderSection" class="placeholder-card">
+            <div class="placeholder-inner">
+              <div class="placeholder-anim">
+                <div class="placeholder-circle c1"></div>
+                <div class="placeholder-circle c2"></div>
+                <div class="placeholder-circle c3"></div>
+                <i class="bi bi-file-earmark-text placeholder-center-icon"></i>
+              </div>
+              <h2 class="placeholder-title">Upload Your Resume</h2>
+              <p class="placeholder-sub">Select a job role and upload a PDF resume to see<br>a detailed skill gap
+                analysis, ATS score, and course recommendations.</p>
+              <div class="placeholder-features">
+                <div class="pf"><i class="bi bi-check-circle-fill"></i> Skill Matching</div>
+                <div class="pf"><i class="bi bi-check-circle-fill"></i> ATS Score</div>
+                <div class="pf"><i class="bi bi-check-circle-fill"></i> Course Recs</div>
+                <div class="pf"><i class="bi bi-check-circle-fill"></i> Chart.js Visual</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESULTS (hidden by default) -->
+          <div id="resultsSection" class="d-none fade-in">
+
+            <!-- ===== HEADER BANNER ===== -->
+            <div class="result-banner mb-3">
+              <div class="result-banner-left">
+                <p class="label-xs mb-0">Analyzed For</p>
+                <h3 class="result-role-name" id="jobRoleDisplay">—</h3>
+              </div>
+              <div class="result-banner-right">
+                <div class="banner-stat">
+                  <span class="banner-stat-value" id="totalRequired">0</span>
+                  <span class="banner-stat-label">Required</span>
+                </div>
+                <div class="banner-stat stat-green">
+                  <span class="banner-stat-value" id="totalMatched">0</span>
+                  <span class="banner-stat-label">Matched</span>
+                </div>
+                <div class="banner-stat stat-red">
+                  <span class="banner-stat-value" id="totalMissing">0</span>
+                  <span class="banner-stat-label">Missing</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== TAB NAVIGATION ===== -->
+            <div class="tabs-nav mb-3" id="resultsTabNav">
+              <button class="tab-btn active" data-tab="overview">
+                <i class="bi bi-speedometer2"></i>
+                <span>Overview</span>
+              </button>
+              <button class="tab-btn" data-tab="skills">
+                <i class="bi bi-puzzle-fill"></i>
+                <span>Skills</span>
+              </button>
+              <button class="tab-btn" data-tab="ats">
+                <i class="bi bi-shield-check"></i>
+                <span>ATS Score</span>
+              </button>
+              <button class="tab-btn" data-tab="courses">
+                <i class="bi bi-mortarboard-fill"></i>
+                <span>Courses</span>
+              </button>
+              <button class="tab-btn" data-tab="interview">
+                <i class="bi bi-chat-square-quote-fill"></i>
+                <span>Interview</span>
+              </button>
+              <button class="tab-btn" data-tab="careers">
+                <i class="bi bi-signpost-split-fill"></i>
+                <span>Career Paths</span>
+              </button>
+            </div>
+
+            <!-- ===== TAB PANELS ===== -->
+
+            <!-- TAB 1: OVERVIEW -->
+            <div class="tab-panel active" id="panel-overview">
+              <div class="row g-3">
+                <!-- Score Ring -->
+                <div class="col-md-4">
+                  <div
+                    class="glass-card h-100 text-center d-flex flex-column align-items-center justify-content-center py-4">
+                    <p class="label-xs mb-2">Skill Match</p>
+                    <div class="score-ring" id="scoreRing">
+                      <svg viewBox="0 0 120 120" class="score-svg">
+                        <circle class="score-track" cx="60" cy="60" r="52" />
+                        <circle class="score-fill" id="scoreArc" cx="60" cy="60" r="52" stroke-dasharray="326.7"
+                          stroke-dashoffset="326.7" />
+                      </svg>
+                      <div class="score-inner">
+                        <span class="score-pct" id="scoreDisplay">0%</span>
+                        <span class="score-lbl">Match</span>
+                      </div>
+                    </div>
+                    <div class="mt-3">
+                      <p class="label-xs mb-1">TF-IDF Similarity</p>
+                      <span class="tfidf-badge" id="tfidfDisplay">—</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Bar Chart -->
+                <div class="col-md-8">
+                  <div class="glass-card h-100">
+                    <h4 class="card-title mb-3"><i class="bi bi-bar-chart-line-fill me-2"></i>Match Overview</h4>
+                    <div class="chart-wrap">
+                      <canvas id="skillChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Radar Chart -->
+              <div class="glass-card mt-3">
+                <h4 class="card-title mb-3"><i class="bi bi-radar me-2"></i>Skill Radar</h4>
+                <div class="radar-wrap">
+                  <canvas id="radarChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Quick ATS Preview -->
+              <div class="glass-card mt-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="ats-mini-ring" id="atsMiniRing">
+                      <svg viewBox="0 0 60 60" class="ats-mini-svg">
+                        <circle class="ats-mini-track" cx="30" cy="30" r="24" />
+                        <circle class="ats-mini-fill" id="atsMiniArc" cx="30" cy="30" r="24" stroke-dasharray="150.8"
+                          stroke-dashoffset="150.8" />
+                      </svg>
+                      <span class="ats-mini-val" id="atsMiniVal">0</span>
+                    </div>
+                    <div>
+                      <p class="label-xs mb-0">ATS Compatibility</p>
+                      <span class="ats-mini-label" id="atsMiniLabel">—</span>
+                    </div>
+                  </div>
+                  <button class="btn-link-accent" onclick="switchResultTab('ats')">
+                    View Details <i class="bi bi-arrow-right ms-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: SKILLS -->
+            <div class="tab-panel" id="panel-skills">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <div class="glass-card skill-section-card">
+                    <h4 class="card-title text-success-custom mb-3">
+                      <i class="bi bi-check2-all me-2"></i>Matched Skills
+                      <span class="count-pill count-green" id="matchedCount">0</span>
+                    </h4>
+                    <div id="matchedSkillsWrap" class="skill-chips-wrap"></div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="glass-card skill-section-card">
+                    <h4 class="card-title text-danger-custom mb-3">
+                      <i class="bi bi-exclamation-circle me-2"></i>Missing Skills
+                      <span class="count-pill count-red" id="missingCount">0</span>
+                    </h4>
+                    <div id="missingSkillsWrap" class="skill-chips-wrap"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="glass-card">
+                <h4 class="card-title mb-3">
+                  <i class="bi bi-person-vcard-fill me-2"></i>All Skills Detected in Resume
+                  <span class="count-pill" id="resumeSkillCount">0</span>
+                </h4>
+                <div id="resumeSkillsWrap" class="skill-chips-wrap"></div>
+              </div>
+            </div>
+
+            <!-- TAB 3: ATS SCORE -->
+            <div class="tab-panel" id="panel-ats">
+              <div class="glass-card mb-3">
+                <h4 class="card-title mb-4">
+                  <i class="bi bi-shield-check me-2 text-accent"></i>Resume Quality / ATS Score
+                  <span class="badge-ai ms-2">AI Powered</span>
+                </h4>
+
+                <!-- ATS Score Header -->
+                <div class="ats-header mb-4">
+                  <div class="ats-ring-wrap">
+                    <div class="ats-ring" id="atsRing">
+                      <svg viewBox="0 0 120 120" class="score-svg">
+                        <circle class="score-track" cx="60" cy="60" r="52" />
+                        <circle class="score-fill" id="atsArc" cx="60" cy="60" r="52" stroke-dasharray="326.7"
+                          stroke-dashoffset="326.7" />
+                      </svg>
+                      <div class="score-inner">
+                        <span class="score-pct" id="atsScoreDisplay">0</span>
+                        <span class="score-lbl">/ 100</span>
+                      </div>
+                    </div>
+                    <div class="ats-label-wrap">
+                      <span class="ats-label" id="atsLabel">—</span>
+                      <span class="ats-sublabel" id="atsWordCount">— words</span>
+                    </div>
+                  </div>
+                  <div class="ats-breakdown" id="atsBreakdown"></div>
+                </div>
+
+                <!-- ATS Suggestions -->
+                <div>
+                  <h5 class="card-title mb-3">
+                    <i class="bi bi-lightbulb-fill text-warning me-2"></i>Suggestions to Improve
+                  </h5>
+                  <ul class="ats-suggestions-list" id="atsSuggestionsList"></ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: COURSES -->
+            <div class="tab-panel" id="panel-courses">
+              <div class="glass-card">
+                <h4 class="card-title mb-4">
+                  <i class="bi bi-mortarboard-fill me-2"></i>Recommended Courses
+                  <span class="badge-ai ms-2">Personalised</span>
+                </h4>
+                <div id="recommendationsWrap"></div>
+              </div>
+            </div>
+
+            <!-- TAB 5: INTERVIEW PREP -->
+            <div class="tab-panel" id="panel-interview">
+              <div class="glass-card">
+                <h4 class="card-title mb-3">
+                  <i class="bi bi-chat-square-quote-fill me-2 text-accent"></i>Interview Preparation
+                  <span class="badge-ai ms-2">Personalised</span>
+                </h4>
+                <p class="text-muted-custom small mb-3">Generate interview questions based on your skill analysis.</p>
+
+                <!-- Experience Level Selector -->
+                <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                  <label class="label-xs mb-0">Experience Level</label>
+                  <div class="toggle-tabs-sm">
+                    <button type="button" class="toggle-btn-sm" data-level="entry"
+                      onclick="setExpLevel('entry')">Entry</button>
+                    <button type="button" class="toggle-btn-sm active" data-level="mid"
+                      onclick="setExpLevel('mid')">Mid</button>
+                    <button type="button" class="toggle-btn-sm" data-level="senior"
+                      onclick="setExpLevel('senior')">Senior</button>
+                  </div>
+                  <button class="btn-analyze" id="generateInterviewBtn" onclick="generateInterviewQuestions()"
+                    style="padding:8px 20px;font-size:0.82rem">
+                    <i class="bi bi-lightning-charge-fill me-1"></i>
+                    <span id="genBtnText">Generate Questions</span>
+                    <span id="genBtnSpinner" class="d-none"><span
+                        class="spinner-border spinner-border-sm me-1"></span>Generating…</span>
+                  </button>
+                </div>
+
+                <!-- Questions Container -->
+                <div id="interviewQuestionsWrap">
+                  <div class="interview-placeholder">
+                    <i class="bi bi-chat-left-dots"></i>
+                    <p>Click <strong>Generate Questions</strong> to create a personalised interview set.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 6: CAREER PATHS -->
+            <div class="tab-panel" id="panel-careers">
+              <div class="glass-card">
+                <h4 class="card-title mb-3">
+                  <i class="bi bi-signpost-split-fill me-2 text-accent"></i>AI Career Path Suggestions
+                  <span class="badge-ai ms-2">Smart Match</span>
+                </h4>
+                <p class="text-muted-custom small mb-3">
+                  Based on your resume skills, here are alternative roles where you're a strong fit.
+                </p>
+                <div id="careerPathsWrap"></div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+              <button class="btn-ghost" onclick="exportPDF()" id="pdfExportBtn">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Download PDF Report
+              </button>
+              <button class="btn-ghost" onclick="resetForm()">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Analyze Another Resume
+              </button>
+            </div>
+          </div>
+          <!-- /resultsSection -->
+
+        </div>
+        <!-- /col-right -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer-custom">
+    <div class="container text-center">
+      <p class="mb-1">AI Skill Gap Identification System &copy; 2026</p>
+      <p class="mb-0 small opacity-50">FastAPI · spaCy · TF-IDF · Bootstrap · Chart.js</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ===========================================================
+    // STATE
+    // ===========================================================
+    let activeTab = "role";
+    let skillChart = null;
+    let lastAnalysis = null;
+    let selectedExpLevel = "mid";
+
+    // ===========================================================
+    // TAB SWITCHING — INPUT (Role vs JD)
+    // ===========================================================
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById("btnRoleTab").classList.toggle("active", tab === "role");
+      document.getElementById("btnJdTab").classList.toggle("active", tab === "jd");
+      document.getElementById("rolePanel").classList.toggle("d-none", tab !== "role");
+      document.getElementById("jdPanel").classList.toggle("d-none", tab !== "jd");
+    }
+
+    // ===========================================================
+    // RESULT TABS
+    // ===========================================================
+    document.getElementById("resultsTabNav").addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab-btn");
+      if (!btn) return;
+      switchResultTab(btn.dataset.tab);
+    });
+
+    function switchResultTab(tabId) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add("active");
+      document.querySelectorAll(".tab-panel").forEach(p => {
+        p.classList.remove("active");
+        p.classList.remove("tab-enter");
+      });
+      const panel = document.getElementById("panel-" + tabId);
+      panel.classList.add("active");
+      // trigger animation
+      requestAnimationFrame(() => panel.classList.add("tab-enter"));
+    }
+
+    // ===========================================================
+    // FILE UPLOAD — DRAG & DROP + CLICK
+    // ===========================================================
+    const uploadZone = document.getElementById("uploadZone");
+    const uploadInput = document.getElementById("resumeFile");
+    const uploadContent = document.getElementById("uploadContent");
+    const uploadSelected = document.getElementById("uploadSelected");
+    const uploadFilename = document.getElementById("uploadFilename");
+
+    uploadZone.addEventListener("click", (e) => {
+      if (!e.target.closest("#clearFile")) uploadInput.click();
+    });
+    uploadZone.addEventListener("dragover", (e) => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+    uploadZone.addEventListener("drop", (e) => {
+      e.preventDefault(); uploadZone.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+    uploadInput.addEventListener("change", () => {
+      if (uploadInput.files[0]) setFile(uploadInput.files[0]);
+    });
+    document.getElementById("clearFile").addEventListener("click", clearFile);
+
+    function setFile(file) {
+      if (!file.name.toLowerCase().endsWith(".pdf")) {
+        showError("Only PDF files are supported.");
+        return;
+      }
+      uploadContent.classList.add("d-none");
+      uploadSelected.classList.remove("d-none");
+      uploadFilename.textContent = file.name;
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      uploadInput.files = dt.files;
+    }
+
+    function clearFile() {
+      uploadInput.value = "";
+      uploadContent.classList.remove("d-none");
+      uploadSelected.classList.add("d-none");
+    }
+
+    // ===========================================================
+    // FORM SUBMIT
+    // ===========================================================
+    document.getElementById("analyzeForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideError(); hideResults();
+
+      const file = uploadInput.files[0];
+      if (!file) { showError("Please upload a PDF resume."); return; }
+
+      if (activeTab === "role") {
+        if (!document.getElementById("jobRole").value) {
+          showError("Please select a job role."); return;
+        }
+      } else {
+        if (!document.getElementById("jobDescription").value.trim()) {
+          showError("Please paste a job description."); return;
+        }
+      }
+
+      setLoading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append("resume", file);
+        if (activeTab === "role") {
+          formData.append("job_role", document.getElementById("jobRole").value);
+        } else {
+          formData.append("job_description", document.getElementById("jobDescription").value.trim());
+        }
+
+        const res = await fetch("/api/analyze", { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.detail || "Analysis failed.");
+          return;
+        }
+
+        renderResults(data);
+        lastAnalysis = data;
+        // Reset interview panel for new analysis
+        const iqw = document.getElementById('interviewQuestionsWrap');
+        if (iqw) iqw.innerHTML = '<div class="interview-placeholder"><i class="bi bi-chat-left-dots"></i><p>Click <strong>Generate Questions</strong> to create a personalised interview set.</p></div>';
+      } catch (err) {
+        showError("Network error. Ensure the server is running.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // ===========================================================
+    // RENDER RESULTS
+    // ===========================================================
+    function renderResults(data) {
+      // Banner
+      document.getElementById("jobRoleDisplay").textContent = data.job_role;
+      document.getElementById("totalRequired").textContent = data.total_required;
+      document.getElementById("totalMatched").textContent = data.total_matched;
+      document.getElementById("totalMissing").textContent = data.total_missing;
+
+      // TF-IDF
+      document.getElementById("tfidfDisplay").textContent = Math.round(data.tfidf_similarity * 100) + "%";
+
+      // Score ring
+      animateRing("scoreArc", "scoreDisplay", "scoreRing", data.match_percentage, true);
+
+      // Skills
+      renderSkillChips("matchedSkillsWrap", data.matched_skills, "chip-matched");
+      renderSkillChips("missingSkillsWrap", data.missing_skills, "chip-missing");
+      renderSkillChips("resumeSkillsWrap", data.resume_skills, "chip-default");
+      document.getElementById("matchedCount").textContent = data.matched_skills.length;
+      document.getElementById("missingCount").textContent = data.missing_skills.length;
+      document.getElementById("resumeSkillCount").textContent = data.resume_skills.length;
+
+      // Chart
+      renderChart(data.match_percentage, data.total_missing, data.total_required);
+
+      // Radar Chart
+      renderRadarChart(data.required_skills, data.matched_skills, data.missing_skills);
+
+      // ATS
+      renderATS(data.ats);
+
+      // Recommendations
+      renderRecommendations(data.recommendations);
+
+      // Career Paths
+      renderCareerPaths(data.career_paths || []);
+
+      // Show
+      document.getElementById("placeholderSection").classList.add("d-none");
+      document.getElementById("resultsSection").classList.remove("d-none");
+      switchResultTab("overview");
+    }
+
+    // ===========================================================
+    // ANIMATED RING (reusable)
+    // ===========================================================
+    function animateRing(arcId, displayId, ringId, pct, appendPercent) {
+      const circumference = 326.7;
+      const arc = document.getElementById(arcId);
+      const display = document.getElementById(displayId);
+      const ring = document.getElementById(ringId);
+
+      ring.classList.remove("ring-green", "ring-yellow", "ring-red");
+      if (pct >= 70) ring.classList.add("ring-green");
+      else if (pct >= 40) ring.classList.add("ring-yellow");
+      else ring.classList.add("ring-red");
+
+      let current = 0;
+      const step = Math.max(pct / 60, 0.5);
+      const iv = setInterval(() => {
+        current = Math.min(current + step, pct);
+        arc.style.strokeDashoffset = circumference - (current / 100) * circumference;
+        display.textContent = Math.round(current) + (appendPercent ? "%" : "");
+        if (current >= pct) clearInterval(iv);
+      }, 16);
+    }
+
+    // ===========================================================
+    // SKILL CHIPS
+    // ===========================================================
+    function renderSkillChips(containerId, skills, cls) {
+      const wrap = document.getElementById(containerId);
+      if (!skills || skills.length === 0) {
+        wrap.innerHTML = `<span class="text-muted-custom fst-italic small">None detected</span>`;
+        return;
+      }
+      wrap.innerHTML = skills.map((s, i) =>
+        `<span class="skill-chip ${cls}" style="animation-delay:${i * 30}ms">${escapeHtml(s)}</span>`
+      ).join("");
+    }
+
+    // ===========================================================
+    // BAR CHART
+    // ===========================================================
+    function renderChart(matchPct, missingCount, totalRequired) {
+      if (skillChart) { skillChart.destroy(); skillChart = null; }
+      const missingPct = totalRequired > 0 ? Math.round((missingCount / totalRequired) * 100) : 0;
+
+      const ctx = document.getElementById("skillChart").getContext("2d");
+      skillChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Matched Skills", "Missing Skills"],
+          datasets: [{
+            label: "Percentage (%)",
+            data: [Math.round(matchPct), missingPct],
+            backgroundColor: [
+              "rgba(74, 222, 128, 0.18)",
+              "rgba(248, 113, 113, 0.18)"
+            ],
+            borderColor: [
+              "rgba(74, 222, 128, 1)",
+              "rgba(248, 113, 113, 1)"
+            ],
+            borderWidth: 2,
+            borderRadius: 12,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 900, easing: "easeOutQuart" },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(15,23,42,0.95)",
+              titleColor: "#e2e8f0",
+              bodyColor: "#94a3b8",
+              borderColor: "rgba(255,255,255,0.08)",
+              borderWidth: 1,
+              cornerRadius: 8,
+              callbacks: { label: ctx => ` ${ctx.parsed.y}%` }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { color: "#64748b", callback: v => v + "%" },
+              grid: { color: "rgba(148,163,184,0.07)" }
+            },
+            x: {
+              ticks: { color: "#94a3b8", font: { weight: 600 } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // ===========================================================
+    // ATS
+    // ===========================================================
+    function renderATS(ats) {
+      if (!ats) return;
+
+      const score = ats.score || 0;
+
+      // Main ATS ring
+      animateRing("atsArc", "atsScoreDisplay", "atsRing", score, false);
+
+      // Mini ring on overview tab
+      const miniCircum = 150.8;
+      const miniArc = document.getElementById("atsMiniArc");
+      const miniRing = document.getElementById("atsMiniRing");
+      miniRing.classList.remove("ring-green", "ring-yellow", "ring-red");
+      if (score >= 80) miniRing.classList.add("ring-green");
+      else if (score >= 50) miniRing.classList.add("ring-yellow");
+      else miniRing.classList.add("ring-red");
+
+      let cur = 0;
+      const s = Math.max(score / 50, 0.5);
+      const iv2 = setInterval(() => {
+        cur = Math.min(cur + s, score);
+        miniArc.style.strokeDashoffset = miniCircum - (cur / 100) * miniCircum;
+        document.getElementById("atsMiniVal").textContent = Math.round(cur);
+        if (cur >= score) clearInterval(iv2);
+      }, 16);
+      document.getElementById("atsMiniLabel").textContent = ats.label || "—";
+
+      // Label
+      const labelEl = document.getElementById("atsLabel");
+      labelEl.textContent = ats.label || "—";
+      labelEl.className = "ats-label ats-label-" + (ats.label || "poor").toLowerCase();
+
+      document.getElementById("atsWordCount").textContent = (ats.word_count || 0) + " words detected";
+
+      // Breakdown
+      const maxMap = { "Contact Info": 20, "Resume Length": 20, "Structure": 25, "Keyword Match": 25, "Skills Detected": 10 };
+      const bEl = document.getElementById("atsBreakdown");
+      bEl.innerHTML = Object.entries(ats.breakdown || {}).map(([cat, val]) => {
+        const max = maxMap[cat] || 25;
+        const pct = Math.round((val / max) * 100);
+        const cls = pct >= 70 ? "ats-bar-fill-green" : pct >= 40 ? "ats-bar-fill-yellow" : "ats-bar-fill-red";
+        return `
+          <div class="ats-breakdown-item">
+            <div class="ats-breakdown-label">
+              <span>${escapeHtml(cat)}</span>
+              <span class="ats-breakdown-pts">${val}/${max}</span>
+            </div>
+            <div class="ats-bar-track">
+              <div class="ats-bar-fill ${cls}" style="width:0%" data-w="${pct}%"></div>
+            </div>
+          </div>`;
+      }).join("");
+
+      requestAnimationFrame(() => {
+        bEl.querySelectorAll(".ats-bar-fill").forEach(bar => {
+          bar.style.transition = "width 0.8s ease";
+          bar.style.width = bar.dataset.w;
+        });
+      });
+
+      // Suggestions
+      const ul = document.getElementById("atsSuggestionsList");
+      ul.innerHTML = (ats.suggestions || []).map((s, i) =>
+        `<li class="ats-suggestion-item" style="animation-delay:${i * 60}ms">
+          <i class="bi bi-arrow-right-circle-fill me-2 text-accent"></i>${escapeHtml(s)}
+        </li>`
+      ).join("");
+    }
+
+    // ===========================================================
+    // RECOMMENDATIONS
+    // ===========================================================
+    function renderRecommendations(recommendations) {
+      const wrap = document.getElementById("recommendationsWrap");
+      if (!recommendations || recommendations.length === 0) {
+        wrap.innerHTML = `<p class="text-muted-custom fst-italic">No recommendations — you're doing great!</p>`;
+        return;
+      }
+
+      wrap.innerHTML = recommendations.map((rec, ri) => `
+        <div class="rec-card" style="animation-delay:${ri * 50}ms">
+          <div class="rec-skill-header" onclick="this.parentElement.classList.toggle('open')">
+            <i class="bi bi-bookmark-fill me-2 text-accent"></i>
+            <strong>${escapeHtml(rec.skill)}</strong>
+            <span class="badge-nano ms-auto">${rec.courses.length}</span>
+            <i class="bi bi-chevron-down rec-chevron ms-2"></i>
+          </div>
+          <div class="rec-courses">
+            ${rec.courses.map(c => `
+              <a href="${escapeHtml(c.course_url)}" target="_blank" rel="noopener noreferrer" class="rec-course-link">
+                <span class="rec-course-name"><i class="bi bi-play-circle me-2"></i>${escapeHtml(c.course_name)}</span>
+                <span class="rec-platform-badge">${escapeHtml(c.platform)}</span>
+              </a>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // ===========================================================
+    // UTILS
+    // ===========================================================
+    function showError(msg) {
+      document.getElementById("errorMsg").textContent = msg;
+      document.getElementById("errorAlert").classList.remove("d-none");
+    }
+    function hideError() {
+      document.getElementById("errorAlert").classList.add("d-none");
+    }
+    function hideResults() {
+      document.getElementById("resultsSection").classList.add("d-none");
+      document.getElementById("placeholderSection").classList.remove("d-none");
+      // Reset rings
+      ["scoreRing", "atsRing", "atsMiniRing"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove("ring-green", "ring-yellow", "ring-red");
+      });
+      ["scoreArc", "atsArc"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.strokeDashoffset = 326.7;
+      });
+      const ma = document.getElementById("atsMiniArc");
+      if (ma) ma.style.strokeDashoffset = 150.8;
+      const sd = document.getElementById("scoreDisplay");
+      if (sd) sd.textContent = "0%";
+      const asd = document.getElementById("atsScoreDisplay");
+      if (asd) asd.textContent = "0";
+    }
+    function setLoading(loading) {
+      document.getElementById("btnText").classList.toggle("d-none", loading);
+      document.getElementById("btnSpinner").classList.toggle("d-none", !loading);
+      document.getElementById("analyzeBtn").disabled = loading;
+    }
+    function resetForm() {
+      document.getElementById("analyzeForm").reset();
+      clearFile();
+      hideResults();
+      hideError();
+      switchTab("role");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ===========================================================
+    // INTERVIEW PREP
+    // ===========================================================
+    function setExpLevel(level) {
+      selectedExpLevel = level;
+      document.querySelectorAll('.toggle-btn-sm').forEach(b => {
+        b.classList.toggle('active', b.dataset.level === level);
+      });
+    }
+
+    async function generateInterviewQuestions() {
+      if (!lastAnalysis) {
+        alert('Please analyze a resume first.');
+        return;
+      }
+
+      const btn = document.getElementById('generateInterviewBtn');
+      document.getElementById('genBtnText').classList.add('d-none');
+      document.getElementById('genBtnSpinner').classList.remove('d-none');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/interview-prep', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            job_role: lastAnalysis.job_role,
+            matched_skills: lastAnalysis.matched_skills,
+            missing_skills: lastAnalysis.missing_skills,
+            match_percentage: lastAnalysis.match_percentage,
+            experience_level: selectedExpLevel,
+          })
+        });
+
+        if (!res.ok) throw new Error('Server error');
+        const data = await res.json();
+        renderInterviewQuestions(data);
+      } catch (err) {
+        document.getElementById('interviewQuestionsWrap').innerHTML =
+          '<div class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>Failed to generate questions. Try again.</div>';
+      } finally {
+        document.getElementById('genBtnText').classList.remove('d-none');
+        document.getElementById('genBtnSpinner').classList.add('d-none');
+        btn.disabled = false;
+      }
+    }
+
+    function renderInterviewQuestions(data) {
+      const wrap = document.getElementById('interviewQuestionsWrap');
+
+      const categories = [
+        {
+          key: 'technical_questions', title: 'Technical Questions',
+          icon: 'bi-code-slash', color: '#a78bfa',
+          subtitle: 'Based on your strong skills'
+        },
+        {
+          key: 'improvement_questions', title: 'Improvement Questions',
+          icon: 'bi-graph-up-arrow', color: '#fbbf24',
+          subtitle: 'Areas to develop'
+        },
+        {
+          key: 'scenario_questions', title: 'Scenario-Based Questions',
+          icon: 'bi-diagram-3-fill', color: '#4ade80',
+          subtitle: 'Real-world problem solving'
+        },
+        {
+          key: 'behavioral_questions', title: 'Behavioral Questions',
+          icon: 'bi-people-fill', color: '#60a5fa',
+          subtitle: 'Leadership \u0026 communication'
+        },
+      ];
+
+      let html = `<div class="interview-meta mb-3">
+        <span class="chip-sm chip-accent"><i class="bi bi-bullseye me-1"></i>${escapeHtml(data.job_role)}</span>
+        <span class="chip-sm chip-outline"><i class="bi bi-bar-chart-line me-1"></i>${data.experience_level.charAt(0).toUpperCase() + data.experience_level.slice(1)} Level</span>
+        <span class="chip-sm chip-outline"><i class="bi bi-hash me-1"></i>${data.total_questions} Questions</span>
+      </div>`;
+
+      categories.forEach(cat => {
+        const questions = data[cat.key];
+        if (!questions || questions.length === 0) return;
+
+        html += `<div class="interview-category mb-3">
+          <div class="interview-cat-header">
+            <div class="interview-cat-icon" style="background:${cat.color}20;color:${cat.color}">
+              <i class="bi ${cat.icon}"></i>
+            </div>
+            <div>
+              <h6 class="mb-0" style="color:var(--text-1);font-weight:700">${cat.title}</h6>
+              <small style="color:var(--text-3)">${cat.subtitle}</small>
+            </div>
+          </div>
+          <div class="interview-q-list">`;
+
+        questions.forEach((q, i) => {
+          const qText = q.question || q;
+          const skillTag = q.skill ? `<span class="q-skill-tag">${escapeHtml(q.skill)}</span>` : '';
+          html += `<div class="interview-q-card">
+            <div class="q-number">${i + 1}</div>
+            <div class="q-content">
+              <p class="q-text">${escapeHtml(qText)}</p>
+              ${skillTag}
+            </div>
+          </div>`;
+        });
+
+        html += `</div></div>`;
+      });
+
+      wrap.innerHTML = html;
+    }
+
+    // ===========================================================
+    // RADAR CHART (Spider / Skills Coverage)
+    // ===========================================================
+    let radarChart = null;
+    function renderRadarChart(requiredSkills, matchedSkills, missingSkills) {
+      const canvas = document.getElementById('radarChart');
+      if (!canvas) return;
+      if (radarChart) radarChart.destroy();
+
+      // Use up to 10 required skills for readability
+      const labels = requiredSkills.slice(0, 10).map(s =>
+        s.length > 12 ? s.slice(0, 11) + '…' : s
+      );
+      const matchedSet = new Set(matchedSkills.map(s => s.toLowerCase()));
+      const values = requiredSkills.slice(0, 10).map(s =>
+        matchedSet.has(s.toLowerCase()) ? 1 : 0
+      );
+
+      radarChart = new Chart(canvas, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Your Skills',
+            data: values,
+            backgroundColor: 'rgba(167,139,250,0.15)',
+            borderColor: '#a78bfa',
+            borderWidth: 2,
+            pointBackgroundColor: values.map(v => v ? '#4ade80' : '#f87171'),
+            pointBorderColor: values.map(v => v ? '#4ade80' : '#f87171'),
+            pointRadius: 5,
+          }, {
+            label: 'Required',
+            data: requiredSkills.slice(0, 10).map(() => 1),
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderColor: 'rgba(255,255,255,0.15)',
+            borderWidth: 1,
+            borderDash: [4, 4],
+            pointRadius: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            r: {
+              beginAtZero: true, max: 1, min: 0,
+              ticks: { display: false, stepSize: 0.5 },
+              grid: { color: 'rgba(255,255,255,0.06)' },
+              pointLabels: {
+                color: '#94a3b8', font: { size: 11, family: 'Inter' }
+              },
+              angleLines: { color: 'rgba(255,255,255,0.06)' },
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' }
+            }
+          }
+        }
+      });
+    }
+
+    // ===========================================================
+    // CAREER PATHS
+    // ===========================================================
+    function renderCareerPaths(paths) {
+      const wrap = document.getElementById('careerPathsWrap');
+      if (!wrap) return;
+      if (!paths || paths.length === 0) {
+        wrap.innerHTML = '<p class="text-muted-custom">No alternative career paths found.</p>';
+        return;
+      }
+
+      const medals = ['🥇', '🥈', '🥉'];
+      let html = '';
+
+      paths.forEach((p, i) => {
+        const pct = p.match_percentage;
+        const colorClass = pct >= 70 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red';
+        const matchedPreview = p.matched_skills.slice(0, 5).map(s =>
+          `<span class="chip-micro chip-matched">${escapeHtml(s)}</span>`
+        ).join('');
+        const missingPreview = p.missing_skills.slice(0, 4).map(s =>
+          `<span class="chip-micro chip-missing">${escapeHtml(s)}</span>`
+        ).join('');
+
+        html += `<div class="career-card">
+          <div class="career-card-header">
+            <div class="career-medal">${medals[i] || '⭐'}</div>
+            <div class="career-info">
+              <h6 class="mb-0">${escapeHtml(p.role)}</h6>
+              <small class="text-muted-custom">${p.total_required} skills required</small>
+            </div>
+            <div class="career-pct ${colorClass}">
+              <span class="career-pct-val">${pct}%</span>
+              <span class="career-pct-lbl">Match</span>
+            </div>
+          </div>
+          <div class="career-bar-wrap">
+            <div class="career-bar ${colorClass}" style="width:${pct}%"></div>
+          </div>
+          <div class="career-chips-row">
+            <div>
+              <span class="career-chip-label"><i class="bi bi-check-circle text-success me-1"></i>${p.matched_count} Matched</span>
+              <div class="career-chip-list">${matchedPreview}</div>
+            </div>
+            <div>
+              <span class="career-chip-label"><i class="bi bi-x-circle text-danger me-1"></i>${p.missing_count} Missing</span>
+              <div class="career-chip-list">${missingPreview}</div>
+            </div>
+          </div>
+        </div>`;
+      });
+
+      wrap.innerHTML = html;
+    }
+
+    // ===========================================================
+    // PDF EXPORT (Print-based)
+    // ===========================================================
+    function exportPDF() {
+      if (!lastAnalysis) {
+        alert('Please analyze a resume first.');
+        return;
+      }
+      const d = lastAnalysis;
+
+      // Build matched/missing chips HTML
+      const matchedChips = d.matched_skills.map(s => `<span class="pdf-chip pdf-chip-green">${s}</span>`).join(' ');
+      const missingChips = d.missing_skills.map(s => `<span class="pdf-chip pdf-chip-red">${s}</span>`).join(' ');
+
+      // ATS suggestions
+      const atsSugs = (d.ats && d.ats.suggestions) ? d.ats.suggestions.map(s => `<li>${s}</li>`).join('') : '';
+
+      // Career paths
+      let careerHtml = '';
+      if (d.career_paths && d.career_paths.length) {
+        careerHtml = d.career_paths.map(c =>
+          `<tr><td><strong>${c.role}</strong></td><td>${c.match_percentage}%</td><td>${c.matched_count}</td><td>${c.missing_count}</td></tr>`
+        ).join('');
+      }
+
+      // Course recommendations
+      let coursesHtml = '';
+      if (d.recommendations && d.recommendations.length) {
+        d.recommendations.forEach(r => {
+          coursesHtml += `<tr><td><strong>${r.skill}</strong></td><td>`;
+          r.courses.forEach(c => {
+            coursesHtml += `${c.course_name} (${c.platform})<br>`;
+          });
+          coursesHtml += '</td></tr>';
+        });
+      }
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`<!DOCTYPE html><html><head>
+        <title>SkillGap AI Report — ${d.job_role}</title>
+        <style>
+          body{font-family:Arial,sans-serif;margin:40px;color:#222;line-height:1.6}
+          h1{color:#7c3aed;font-size:22px;margin-bottom:4px}
+          h2{color:#4f46e5;font-size:16px;margin-top:28px;border-bottom:2px solid #e2e8f0;padding-bottom:4px}
+          .meta{color:#666;font-size:13px;margin-bottom:20px}
+          .stat-row{display:flex;gap:24px;margin:16px 0}
+          .stat-box{text-align:center;padding:12px 24px;border:1px solid #e2e8f0;border-radius:8px;flex:1}
+          .stat-val{font-size:28px;font-weight:700;color:#7c3aed}
+          .stat-lbl{font-size:11px;color:#888;text-transform:uppercase}
+          .pdf-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;margin:2px}
+          .pdf-chip-green{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+          .pdf-chip-red{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+          table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+          th,td{padding:8px;border:1px solid #e2e8f0;text-align:left}
+          th{background:#f8fafc;color:#475569;font-weight:600}
+          .footer{margin-top:40px;padding-top:12px;border-top:1px solid #e2e8f0;text-align:center;color:#999;font-size:11px}
+          @media print{body{margin:20px}}
+        </style>
+      </head><body>
+        <h1>SkillGap AI — Analysis Report</h1>
+        <p class="meta">Job Role: <strong>${d.job_role}</strong> | File: ${d.filename} | Generated: ${new Date().toLocaleDateString()}</p>
+
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-val">${d.match_percentage}%</div><div class="stat-lbl">Skill Match</div></div>
+          <div class="stat-box"><div class="stat-val">${Math.round(d.tfidf_similarity * 100)}%</div><div class="stat-lbl">TF-IDF Similarity</div></div>
+          <div class="stat-box"><div class="stat-val">${d.ats ? d.ats.score : '—'}</div><div class="stat-lbl">ATS Score</div></div>
+          <div class="stat-box"><div class="stat-val">${d.total_required}</div><div class="stat-lbl">Skills Required</div></div>
+        </div>
+
+        <h2>✅ Matched Skills (${d.matched_skills.length})</h2>
+        <p>${matchedChips || '<em>None</em>'}</p>
+
+        <h2>❌ Missing Skills (${d.missing_skills.length})</h2>
+        <p>${missingChips || '<em>None</em>'}</p>
+
+        ${d.ats ? `<h2>📋 ATS Suggestions</h2><ul>${atsSugs}</ul>` : ''}
+
+        ${careerHtml ? `<h2>🛤️ Alternative Career Paths</h2>
+        <table><tr><th>Role</th><th>Match %</th><th>Matched</th><th>Missing</th></tr>${careerHtml}</table>` : ''}
+
+        ${coursesHtml ? `<h2>📚 Recommended Courses</h2>
+        <table><tr><th>Skill</th><th>Courses</th></tr>${coursesHtml}</table>` : ''}
+
+        <div class="footer">Generated by SkillGap AI • ${new Date().toLocaleString()}</div>
+      </body></html>`);
+
+      printWindow.document.close();
+      setTimeout(() => { printWindow.print(); }, 400);
+    }
+  </script>
+</body>
+
+</html>

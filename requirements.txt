@@ -1,0 +1,22 @@
+# ============================
+# AI Skill Gap Identification System
+# requirements.txt
+# ============================
+
+# Web framework
+fastapi
+uvicorn[standard]
+
+# PDF parsing
+pdfplumber
+
+# NLP
+spacy
+
+# ML / TF-IDF cosine similarity
+scikit-learn
+numpy
+
+# Templating (comes with FastAPI but explicit for clarity)
+jinja2
+python-multipart
