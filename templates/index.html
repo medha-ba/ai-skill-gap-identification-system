@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
   <!-- Custom CSS -->
-  <link href="/static/style.css?v=4" rel="stylesheet" />
+  <link href="/static/style.css?v=5" rel="stylesheet" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -250,10 +250,19 @@
 
               <!-- Radar Chart -->
               <div class="glass-card mt-3">
-                <h4 class="card-title mb-3"><i class="bi bi-radar me-2"></i>Skill Radar</h4>
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                  <h4 class="card-title mb-0"><i class="bi bi-radar me-2"></i>Skill Radar</h4>
+                  <div class="d-flex gap-2">
+                    <span class="radar-legend-chip radar-legend-hit"><span
+                        class="radar-dot dot-green"></span>Matched</span>
+                    <span class="radar-legend-chip radar-legend-miss"><span
+                        class="radar-dot dot-red"></span>Missing</span>
+                  </div>
+                </div>
                 <div class="radar-wrap">
                   <canvas id="radarChart"></canvas>
                 </div>
+                <div class="radar-skill-legend" id="radarSkillLegend"></div>
               </div>
 
               <!-- Quick ATS Preview -->
@@ -996,14 +1005,25 @@
       if (!canvas) return;
       if (radarChart) radarChart.destroy();
 
-      // Use up to 10 required skills for readability
-      const labels = requiredSkills.slice(0, 10).map(s =>
-        s.length > 12 ? s.slice(0, 11) + '…' : s
-      );
+      // Show up to 12 required skills
+      const maxSkills = Math.min(requiredSkills.length, 12);
+      const skills = requiredSkills.slice(0, maxSkills);
+      const labels = skills.map(s => {
+        const cap = s.charAt(0).toUpperCase() + s.slice(1);
+        return cap.length > 14 ? cap.slice(0, 13) + '…' : cap;
+      });
+
       const matchedSet = new Set(matchedSkills.map(s => s.toLowerCase()));
-      const values = requiredSkills.slice(0, 10).map(s =>
-        matchedSet.has(s.toLowerCase()) ? 1 : 0
+      const values = skills.map(s => matchedSet.has(s.toLowerCase()) ? 1 : 0);
+
+      // Gradient for matched area
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0,
+        canvas.width / 2, canvas.height / 2, canvas.width / 2
       );
+      grad.addColorStop(0, 'rgba(74,222,128,0.25)');
+      grad.addColorStop(1, 'rgba(167,139,250,0.05)');
 
       radarChart = new Chart(canvas, {
         type: 'radar',
@@ -1012,43 +1032,92 @@
           datasets: [{
             label: 'Your Skills',
             data: values,
-            backgroundColor: 'rgba(167,139,250,0.15)',
-            borderColor: '#a78bfa',
-            borderWidth: 2,
+            backgroundColor: grad,
+            borderColor: '#4ade80',
+            borderWidth: 2.5,
             pointBackgroundColor: values.map(v => v ? '#4ade80' : '#f87171'),
-            pointBorderColor: values.map(v => v ? '#4ade80' : '#f87171'),
-            pointRadius: 5,
+            pointBorderColor: values.map(v => v ? '#22c55e' : '#ef4444'),
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 9,
+            pointHoverBorderWidth: 3,
+            pointHoverBackgroundColor: values.map(v => v ? '#86efac' : '#fca5a5'),
+            fill: true,
           }, {
             label: 'Required',
-            data: requiredSkills.slice(0, 10).map(() => 1),
-            backgroundColor: 'rgba(255,255,255,0.03)',
-            borderColor: 'rgba(255,255,255,0.15)',
-            borderWidth: 1,
-            borderDash: [4, 4],
+            data: skills.map(() => 1),
+            backgroundColor: 'rgba(167,139,250,0.04)',
+            borderColor: 'rgba(167,139,250,0.3)',
+            borderWidth: 1.5,
+            borderDash: [5, 5],
             pointRadius: 0,
+            pointHoverRadius: 0,
+            fill: true,
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: true,
+          animation: {
+            duration: 800,
+            easing: 'easeOutQuart',
+          },
           scales: {
             r: {
               beginAtZero: true, max: 1, min: 0,
               ticks: { display: false, stepSize: 0.5 },
-              grid: { color: 'rgba(255,255,255,0.06)' },
+              grid: { color: 'rgba(255,255,255,0.05)', lineWidth: 1 },
               pointLabels: {
-                color: '#94a3b8', font: { size: 11, family: 'Inter' }
+                color: (ctx) => {
+                  const idx = ctx.index;
+                  return values[idx] ? '#4ade80' : '#f87171';
+                },
+                font: { size: 11, family: 'Inter', weight: '600' },
+                padding: 14,
               },
-              angleLines: { color: 'rgba(255,255,255,0.06)' },
+              angleLines: { color: 'rgba(255,255,255,0.05)' },
             }
           },
           plugins: {
-            legend: {
-              labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' }
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,15,30,0.95)',
+              borderColor: 'rgba(167,139,250,0.3)',
+              borderWidth: 1,
+              titleFont: { family: 'Inter', size: 13, weight: '700' },
+              bodyFont: { family: 'Inter', size: 12 },
+              padding: 12,
+              cornerRadius: 10,
+              displayColors: false,
+              callbacks: {
+                title: (items) => {
+                  if (!items.length) return '';
+                  const idx = items[0].dataIndex;
+                  return skills[idx].charAt(0).toUpperCase() + skills[idx].slice(1);
+                },
+                label: (item) => {
+                  if (item.datasetIndex === 1) return '';
+                  return item.raw === 1 ? '✅ You have this skill' : '❌ Skill gap — needs improvement';
+                }
+              }
             }
           }
         }
       });
+
+      // Skill legend chips below chart
+      const legend = document.getElementById('radarSkillLegend');
+      if (legend) {
+        let html = '';
+        skills.forEach((s, i) => {
+          const isMatch = matchedSet.has(s.toLowerCase());
+          const cls = isMatch ? 'radar-skill-hit' : 'radar-skill-miss';
+          const icon = isMatch ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+          const cap = s.charAt(0).toUpperCase() + s.slice(1);
+          html += `<span class="radar-skill-chip ${cls}"><i class="bi ${icon}"></i>${escapeHtml(cap)}</span>`;
+        });
+        legend.innerHTML = html;
+      }
     }
 
     // ===========================================================
